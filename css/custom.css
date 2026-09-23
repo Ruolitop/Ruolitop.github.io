@@ -1,14 +1,93 @@
-@import 'node_modules/cn-fontsource-lxgw-wen-kai-gb-screen-r/font.css';
+/* 原第 1 行的 @import 'node_modules/cn-fontsource-lxgw-wen-kai-gb-screen-r/font.css'
+   已删除：该包并未安装在 node_modules 中，浏览器端也只会请求到
+   /css/node_modules/... 得到 404（每次页面加载都发一次无效请求）。
+   若确实要用文楷，请参照下面的 @font-face 写法把它放进 source/font/。 */
 
 @font-face {
     /* 为载入的字体取名字(随意) */
     font-family: 'XWWK';
     /* 字体文件地址(相对或者绝对路径都可以) */
     src: url(/font/lxgwwenkaiscreen.subset.v1.235.standard.woff2);
-    /* 定义加粗样式(加粗多少) */
-    font-weight: 0;
+    /* 定义加粗样式：原先写的 0 是非法值会被浏览器丢弃，等价于 normal，这里显式改正 */
+    font-weight: normal;
     /* 定义字体样式(斜体/非斜体) */
     font-style: normal;
     /* 定义显示样式 */
     font-display: block;
+}
+
+/* ==========================================================================
+   正文字体：PingFang 简体（苹方-简 标准体）
+   --------------------------------------------------------------------------
+   字体文件 : source/font/PingFang 简体.woff2  已子集化，1.12MB，优先使用
+              source/font/PingFang 简体.ttf    原始全字集 10.42MB，仅作回退
+   站点地址 : /font/PingFang 简体.woff2（URL 中空格与中文需转义）
+   子集生成 : python tools/subset-font.py --include-gb2312
+              （含站点用字 + GB2312 全部 6763 汉字；去掉该参数约为 210KB，
+                但新增生僻字会退回系统字体）
+   生效范围 : _config.butterfly.yml → font.font_family 已设为 'PingFang 简体'
+   --------------------------------------------------------------------------
+   注意：该字体文件只含一个 400(Regular) 字重。
+   因此这里刻意声明 font-weight: normal，不要写成 100 900 ——
+   若声明为区间，浏览器会认为加粗字重已被覆盖而不再合成加粗，
+   结果是 <strong>／小标题全部失去粗细对比（已实测）。
+   ========================================================================== */
+@font-face {
+    font-family: 'PingFang 简体';
+    src:
+        /* 以字体文件为权威来源：所有设备渲染一致。
+           woff2 优先（子集 1.12MB），老浏览器回退全字集 ttf；
+           两者都取不到时才退回设备自带苹方。 */
+        url('/font/PingFang%20%E7%AE%80%E4%BD%93.woff2') format('woff2'),
+        url('/font/PingFang%20%E7%AE%80%E4%BD%93.ttf') format('truetype'),
+        local('PingFang SC'),
+        local('PingFangSC'),
+        local('苹方-简');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ==========================================================================
+   代码字体：Consolas（等宽）
+   --------------------------------------------------------------------------
+   原始字体 : source/font/consola-1.ttf    96.8KB  真 TrueType (glyf)，非转档
+   站点字体 : source/font/consola-1.woff2  43.6KB  无损转格式（45%），优先使用
+   站点地址 : /font/consola-1.woff2
+   字体身份 : family=Consolas  subfamily=Regular  usWeightClass=400
+              unitsPerEm=2048  post.isFixedPitch=1
+              600 个码位（拉丁/希腊/西里尔/常用数学符号），无 CJK
+   生效范围 : _config.butterfly.yml → font.code_font_family
+              （主题的 _highlight/highlight.styl 对 .container 下的 pre 与 code
+                统一施加 font-family: $code-font-family !important，所以代码块与
+                行内代码一起生效）
+   --------------------------------------------------------------------------
+   体检结论（python tools/check-font-web.py source/font/consola-1.ttf）：
+     通过，可直接作为 web 字体使用。
+       · cmap 三个子表 language 全为 0        → OTS 不会拒绝
+       · 无字形使用 flag 保留位 7 (0x80)      → OTS 不会拒绝
+       · ASCII 95/95 全覆盖，无空白字形
+       · hmtx.lsb 与 glyf.xMin 完全一致
+       · ASCII 区字宽唯一：advance = 1126/2048 = 0.5498 em → 纯等宽
+     实测（无头 Edge）：woff2 与 ttf 均 `FontFace(...).load()` 成功，
+       `document.fonts` 为 loaded，字符宽度精确命中 1126/2048（无 OTS 报错）。
+     这与上一版 HELVETI1-1（Type1 转档、被 OTS 整文件拒绝、需重建）完全不同，
+     所以这里可以放心把原始 ttf 作为回退列进 src。
+
+   关于字体栈顺序 —— 拉丁等宽字体要排在中文前面：
+     Consolas 没有 CJK，代码块里的中文注释必然回退。若把 'PingFang 简体' 排在
+     前面，一旦 Consolas Web 加载失败，拉丁字符会由苹方接管 —— 苹方是比例字体，
+     代码会散成非等宽。所以顺序是「本字体 → 各平台系统等宽 → 中文字体 → 兜底」。
+   --------------------------------------------------------------------------
+   重新体检 / 转格式：python tools/check-font-web.py source/font/consola-1.ttf \
+                        --convert source/font/consola-1.woff2
+   ========================================================================== */
+@font-face {
+    font-family: 'Consolas Web';
+    src:
+        url('/font/consola-1.woff2') format('woff2'),
+        url('/font/consola-1.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
 }
