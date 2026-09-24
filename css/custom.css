@@ -91,29 +91,3 @@
     font-style: normal;
     font-display: swap;
 }
-
-/* ==========================================================================
-   页脚透明后的文字可读性
-   --------------------------------------------------------------------------
-   配合 _config.butterfly.yml 的 footer_img: transparent 使用。
-
-   主题 #footer 的正文色是 var(--light-grey) = #eee —— 这是为它原本的
-   `background-color: $light-blue` 蓝底配的。页脚改成 transparent 之后，
-   这层近白色直接落在全局背景图（这张图是浅色晨曦）上：
-   实测 背景 #e0e0e0 时对比度只有 1.08:1（WCAG AA 正文下限是 4.5:1），
-   版权那一行几乎完全看不见。
-
-   处理方式：
-     color 用主题的正文色 var(--font-color)；
-     text-shadow 用背景色 var(--global-bg) 做柔光描边，压住背景上的杂色。
-   两个变量在深色模式下会被主题改写成「浅色文字 + 近黑背景」，会自动适配。
-
-   如果你更想保留原来的浅色页脚文字，另一条路是给页脚加一层半透明遮罩：
-   _config.butterfly.yml → mask.footer: true（会牺牲一部分"直接透出"的效果）。
-   ========================================================================== */
-#footer,
-#footer *,
-#footer a {
-    color: var(--font-color);
-    text-shadow: 0 0 6px var(--global-bg), 0 0 2px var(--global-bg);
-}
