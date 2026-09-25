@@ -91,3 +91,78 @@
     font-style: normal;
     font-display: swap;
 }
+
+/* ==========================================================================
+   正文标题上间距：加大标题与其「上文」的距离
+   --------------------------------------------------------------------------
+   主题默认规则（node_modules/hexo-theme-butterfly/source/css/_global/index.styl）：
+     h1,h2,h3,h4,h5,h6 { margin: 20px 0 14px }
+   上间距仅 20px，标题紧贴上一段文字，长文里不易分辨「新章节从这里开始」。
+
+   这里**只改 margin-top**，下间距 14px 保持不动 ——
+   标题因此更靠近它所属的正文、更远离上一节，分段感更强。
+   数值按层级递增：层级越高，分隔感越强。
+
+   生效原因：本文件经 inject.head 注入，位于 /css/index.css 之后；
+   且选择器带 #article-container，优先级高于主题的裸标签选择器。
+
+   想自己调：直接改下面 6 个数值（越大 = 标题离上文越远）。
+   注：只作用于正文（<article id="article-container">），侧栏/卡片标题不受影响。
+   ========================================================================== */
+#article-container h1 { margin-top: 46px; }
+#article-container h2 { margin-top: 40px; }
+#article-container h3 { margin-top: 34px; }
+#article-container h4 { margin-top: 28px; }
+#article-container h5 { margin-top: 24px; }
+#article-container h6 { margin-top: 24px; }
+
+/* ==========================================================================
+   卡片对全局背景的透明度（文章卡片 / 首页卡片 / 侧栏卡片 / 分页）
+   --------------------------------------------------------------------------
+   主题把这几类卡片的背景统一指向一个 CSS 变量，定义在
+     node_modules/hexo-theme-butterfly/source/css/_global/index.styl
+       :root              { --card-bg: #fff      }   ← 亮色
+       [data-theme='dark']{ --card-bg: #121212  }   ← 暗色
+   变量是**纯色**，所以卡片完全不透明，把 /img/website-background.jpg 全挡住。
+   注意：主题把这个变量写死在 CSS 里，_config.butterfly.yml **没有**对应开关，
+   想调只能覆盖 CSS 变量（就是下面这两条）。
+
+   谁受这条规则影响（主题 .cardHover 分组，引自编译后的 index.css）：
+     .layout > div:first-child:not(.nc)   → 文章页正文卡片（<div id="post">）
+     #recent-posts .recent-post-item       → 首页文章卡片
+     #aside-content .card-widget           → 侧栏卡片
+     .layout .pagination > *:not(.space)   → 分页
+     .type-404 .error-content              → 404 页
+
+   生效原因：本文件经 inject.head 注入，位于 /css/index.css 之后；
+   暗色那条额外加 html 前缀（html[data-theme=...]），
+   因为主题用的是 [data-theme='dark']，加 html 才能稳赢而不靠加载顺序。
+
+   ★ 想自己调透明度：改下面两个 rgba 的**第 4 个数**（0 = 全透明，1 = 不透明）。
+       · 亮色模式：数值越小 → 背景图越明显，但深色正文越难读
+         （背景图是深色夜景 + 正文深色字，两者的对比度会同步下降）。
+       · 暗色模式：正文是浅色字，同样别调太低。
+       · 实测建议区间：亮色 0.75 ~ 0.9，暗色 0.7 ~ 0.9。
+         低于 0.6 时正文会开始发灰、阅读吃力。
+   ========================================================================== */
+:root {
+    --card-bg: rgba(255, 255, 255, 0.9);
+}
+html[data-theme='dark'] {
+    --card-bg: rgba(18, 18, 18, 0.75);
+}
+
+/* --------------------------------------------------------------------------
+   备选写法：只让「文章页正文卡片」半透明，首页 / 侧栏卡片保持原来的纯白。
+
+   用法：把上面 :root 与 html[data-theme] 两条删掉或注释掉，
+        改用下面两条（改成 CSS 注释块即可）。
+
+       #post { background: rgba(255, 255, 255, 0.8); }
+       html[data-theme='dark'] #post { background: rgba(18, 18, 18, 0.75); }
+
+   说明：#post 就是文章页的正文卡片（主题用 .layout > div:first-child:not(.nc)
+   选中它，这里直接用 id 更好写、优先级也够）。
+   ⚠ 此时侧栏卡片仍是纯白，与半透明正文并排会明显不一致 —— 一般不建议，
+     除非你同时把侧栏卡片也调成同色。
+   -------------------------------------------------------------------------- */
