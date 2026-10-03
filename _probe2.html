@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>报告体样式探针</title>
+<link rel="stylesheet" href="/css/report.css">
+</head>
+<body>
+<div id="article-container" class="post-content">
+  <div class="keybox"><p class="rb-title">发现一（盈利能力）</p><p>正文一段。</p></div>
+  <div class="warnbox"><p>警示一段。</p></div>
+  <table class="report">
+    <thead><tr><th>字段</th><th>类型</th></tr></thead>
+    <tbody>
+      <tr><td><code>order_id</code></td><td>string</td></tr>
+      <tr class="group"><td>订单主表</td><td></td></tr>
+    </tbody>
+  </table>
+  <p class="tabcap">表 2.1　字段字典</p>
+  <blockquote><p>普通引用（不该有框的样式）</p></blockquote>
+</div>
+<pre id="out"></pre>
+<script>
+const rows = [];
+function g(sel, props) {
+  const el = document.querySelector(sel);
+  if (!el) { rows.push('★ 取不到元素: ' + sel); return; }
+  const cs = getComputedStyle(el);
+  rows.push(sel + '  →  ' + props.map((p) => p + '=' + cs.getPropertyValue(p)).join(' | '));
+}
+g('.keybox', ['background-color', 'border-left-color', 'border-left-width', 'border-radius', 'padding-left']);
+g('.warnbox', ['border-left-color']);
+g('.keybox > .rb-title', ['font-weight', 'font-size', 'color']);
+g('.keybox > p', ['margin-top', 'margin-bottom']);
+g('table.report', ['border-collapse', 'border-left-width', 'width']);
+g('table.report thead th', ['border-top-width', 'border-top-color', 'border-bottom-color', 'border-left-width', 'background-color', 'text-align', 'font-weight']);
+g('table.report tbody td', ['border-left-width', 'border-top-width']);
+g('table.report tbody tr:last-child td', ['border-bottom-color']);
+g('table.report tr.group td', ['font-style', 'color', 'padding-top']);
+g('table.report code', ['background-color', 'padding-left', 'font-family']);
+g('.tabcap', ['text-align', 'color', 'font-size']);
+g('#article-container blockquote', ['background-color', 'border-left-color']);
+document.getElementById('out').textContent = rows.join('\n');
+</script>
+</body>
+</html>

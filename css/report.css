@@ -1,0 +1,148 @@
+/* ==========================================================================
+   报告体：把 LaTeX 报告的排版语义搬进网页
+   --------------------------------------------------------------------------
+   起因：一份用 LaTeX（ctexart + tcolorbox + booktabs）写的长报告要发到博客，
+   Markdown 表达不了其中两类结构 ——「强调框」和「三线表」。
+
+   ★ 正文怎么写：用 Obsidian 的 callout 语法，**不要手写 HTML** ——
+       > [!note] 发现一（盈利能力）
+       > 折扣率每提高 1 个百分点，退单率上升 $r = -0.707$。
+       > [!warning] 口径提醒
+       > 表中的毛利率是**未剔除**退货后的值。
+     站点侧（scripts/report-blocks.js）与面板预览侧（admin/src/preview.src.js）
+     在渲染后把引用块转成下面这些容器，规则只有一份：admin/lib/report-blocks.js。
+
+   为什么不要手写 HTML 块：**HTML 块内部是 Markdown 禁区**。实测（markdown-it 8.4.2）
+     框里写 `**粗体**` 会原样输出、`$公式$` 不渲染；
+     而且内容分成两段时，第二段会**跑到框外**（HTML 块遇空行即结束）。
+     引用块是原生 markdown 构造，多段/列表/表格/公式全部正常。
+
+   类名与 LaTeX 侧一一对应，方便两边互查：
+     .keybox / .warnbox   ←  \newtcolorbox{keybox} / {warnbox}
+     table.report         ←  booktabs 的 \toprule / \midrule / \bottomrule
+     tr.group             ←  \multicolumn{4}{l}{\textbf{（一）…}}
+     .tabcap              ←  \caption{}
+     .rb-title            ←  框内第一行的标题（callout 里 `[!note] ` 后面那行）
+
+   为什么每条都带 #article-container 前缀：
+     主题的表格规则是裸标签选择器（`table th, table td { border: 1px solid … }`）。
+     本文件虽在 index.css 之后加载，加前缀可同时赢下优先级，不依赖加载顺序。
+
+   暗色：主题的表格线用 --light-grey、表头用写死的 rgba，这里改为统一走
+     --report-* 变量，并在 html[data-theme='dark'] 下换一套值。
+
+   ⚠ 刻意不做：longtable 的「续下页」页脚在网页上无意义（表格自然延伸）。
+     想给超长表格加「吸顶表头」，得先解决 .table-wrap 的 overflow-x 造成
+     sticky 参照错位的问题，暂缓。
+
+   ★ 为什么单独拆成这个文件，而不是留在 custom.css 里：
+     面板写作页的预览区（admin/public/editor.html 的 #preview）用的是它自己
+     一小段内联样式，**不加载** custom.css；而面板的静态根是 admin/public，
+     取不到 source/css/。于是：
+       站点  _config.butterfly.yml 的 inject.head 注入本文件；
+       面板  server.js 另开一条只读路由 /site-css/* 也指向本文件，
+             editor.html 里 <link> 同一份。
+     规则仍然只有一份 —— 改了这里，站点与面板预览一起变。
+     否则新加的框只在站点上有样式、面板预览里是块白板，看着像「样式没生效」。
+   ========================================================================== */
+
+:root {
+    --report-fill: #f1efe8; /* 框底：对应 LaTeX 的 lightgray */
+    --report-rule: #5f5e5a; /* 三线表的横线：midgray 的深端 */
+    --report-rule-light: #b4b2a9;
+    --report-accent: #185fa5; /* 蓝框：对应 deepblue */
+    --report-danger: #a32d2d; /* 红框：对应 deepred */
+    --report-muted: #888780; /* 次级文字：对应 midgray */
+}
+html[data-theme='dark'] {
+    --report-fill: rgba(255, 255, 255, 0.055);
+    --report-rule: #b4b2a9;
+    --report-rule-light: #5f5e5a;
+    /* 暗色下若沿用 600 级会沉进背景，取调色板 200 级 */
+    --report-accent: #85b7eb;
+    --report-danger: #f09595;
+    --report-muted: #b4b2a9;
+}
+
+/* ---- 强调框 ----------------------------------------------------------- */
+#article-container .keybox,
+#article-container .warnbox {
+    background: var(--report-fill);
+    border: 0.5px solid var(--report-accent);
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 18px 0;
+}
+#article-container .warnbox {
+    border-color: var(--report-danger);
+}
+/* 框内自成一段，首尾不要留多余空档 */
+#article-container .keybox > p,
+#article-container .warnbox > p {
+    margin: 0 0 8px;
+}
+#article-container .keybox > p:last-child,
+#article-container .warnbox > p:last-child {
+    margin-bottom: 0;
+}
+/* 框内第一行的标题 —— callout 的 `[!note] 标题` 会被单独切成这一行。
+   对应报告里的 \textbf{…}，所以只加粗、不换色、不放大。 */
+#article-container .keybox > p.rb-title,
+#article-container .warnbox > p.rb-title {
+    font-weight: 500;
+}
+
+/* ---- 三线表（booktabs 风格）------------------------------------------ */
+#article-container table.report {
+    border: none; /* 覆盖主题的 border-top / border-left */
+    border-collapse: collapse; /* 覆盖主题的 separate，否则每条线都成双线 */
+    width: 100%;
+    font-size: 0.925em;
+    line-height: 1.55;
+}
+#article-container table.report thead {
+    background: none; /* 覆盖主题表头的 rgba(153,169,191,.1) 灰底 */
+}
+#article-container table.report th,
+#article-container table.report td {
+    border: none; /* 覆盖主题「每格都有边框」的全网格 */
+    padding: 5px 10px;
+    vertical-align: top;
+}
+/* ⚠ 亚像素边框会被取整：实测（getComputedStyle）写 0.5px 与 1.5px 都变成 1px，
+   于是 booktabs「顶线粗、表头下线细」的层次在 1x DPR 屏上会整个消失。
+   所以层次改由**颜色**承担（深—浅—深），粗细只在高 DPI 屏上作为额外加成。 */
+#article-container table.report thead th {
+    border-top: 1.5px solid var(--report-rule);
+    border-bottom: 1px solid var(--report-rule-light);
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-weight: 500;
+    text-align: left;
+}
+#article-container table.report tbody tr:last-child td {
+    border-bottom: 1.5px solid var(--report-rule);
+}
+/* 分组行（表内的一级小标题） */
+#article-container table.report tbody tr.group td {
+    padding-top: 14px;
+    padding-bottom: 3px;
+    color: var(--report-muted);
+    font-style: italic;
+}
+/* 字段名列：用 <code> 以继承主题的代码字体，但去掉它的底色与内边距 */
+#article-container table.report code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: 1em;
+}
+
+/* ---- 表注 / 图注 ------------------------------------------------------ */
+#article-container .tabcap {
+    text-align: center;
+    font-size: 0.86em;
+    color: var(--report-muted);
+    margin: 16px 0 8px;
+}
