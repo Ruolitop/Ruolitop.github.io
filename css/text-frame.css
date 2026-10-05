@@ -1,0 +1,66 @@
+/* ==========================================================================
+   纯文本输出展示框（```text``` 围栏，用于展示代码/命令的「输出结果」）
+   --------------------------------------------------------------------------
+   动机：```text``` 走的是 highlight.js 的 plaintext（无 token），内容本就没有
+   高亮，但主题仍把它套进「代码块」的壳里 —— 带 mac 三个圆点、大写语言标签
+   TEXT、复制按钮、行号列。这些对「展示一段输出」全是噪音，还容易让读者把
+   输出误读成「需要输入的命令」。
+
+   【为什么单独成文件，而不写进 custom.css】与 report.css 同一个理由：
+   面板写作页的预览区也要用这份规则，而面板静态根是 admin/public 取不到
+   source/css/，server.js 为此开了只读路由 /site-css/* 指向 source/css/。
+   单独成文件 → 两边 link 同一份，规则只有一份，改了两边一起变。
+
+   【两端 HTML 结构不同，所以有两段选择器】
+   · 站点：hexo-util 把围栏包成
+       <figure class="highlight text"><table>
+         <td class="gutter">（行号列）</td><td class="code"><pre>…</pre></td>
+       </table></figure>
+     工具条（mac 圆点 / 语言标签 TEXT / 复制按钮）是主题 main.js 运行时
+     注入的 .highlight-tools，与语言无关 —— 所以对 text 一并隐藏。
+   · 面板预览：admin/src/preview.src.js 只复刻 markdown-it 那一层（hexo-util
+     的 figure/table 包装不在渲染链里），产出
+       <pre class="highlight"><code class="text">…</code></pre>
+     语言 class 在内层 code 上，而要加边框的是外层 pre —— 用 :has() 上探
+     （面板跑在本机 Edge/Chromium 里，:has() 自 105 起支持，够用）。
+   ========================================================================== */
+
+/* ---------------- 站点（figure.highlight.text + table 结构） ---------------- */
+
+#article-container figure.highlight.text {
+    /* 去掉 macStyle 给代码块加的投影，输出框要更平 */
+    box-shadow: none;
+    border-radius: 4px;
+    border: 1px solid rgba(128, 128, 128, .18);
+    border-left: 3px solid #49b1f5; /* 主题默认主色 $bright-blue（var.styl） */
+    background: var(--hl-bg);
+}
+
+/* 隐藏工具条：mac 圆点 + 大写语言标签 + 复制按钮，输出框不需要 */
+#article-container figure.highlight.text .highlight-tools {
+    display: none;
+}
+
+/* 隐藏行号列，让输出占满整行 */
+#article-container figure.highlight.text .gutter {
+    display: none;
+}
+
+/* code 列撑满（行号列隐藏后 table 里只剩这一列） */
+#article-container figure.highlight.text .code pre {
+    width: 100%;
+    padding: 10px 16px;
+}
+
+/* 暗色主题：深底沿用代码块的 --hl-bg，左边线换更亮的蓝保证对比度 */
+html[data-theme='dark'] #article-container figure.highlight.text {
+    border-left-color: #7ec8f8;
+}
+
+/* ---------------- 面板写作页预览（pre.highlight > code.text 结构） --------
+   预览里所有围栏都是同一个浅灰盒（editor.html 的 #preview pre），
+   这里只给 text 加同款左边线，让「输出」和「代码」在预览里也能一眼区分。
+   特异性高于 #preview pre，不受内联样式加载顺序影响。 */
+#preview pre.highlight:has(> code.text) {
+    border-left: 3px solid #49b1f5;
+}
